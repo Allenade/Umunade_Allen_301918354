@@ -1,0 +1,10 @@
+ERROR:  duplicate key value violates unique constraint "uq_one_open_loan_per_copy"
+DETAIL:  Key (copy_id)=(1) already exists.
+ERROR:  duplicate key value violates unique constraint "title_isbn_key"
+DETAIL:  Key (isbn)=(9780435966300) already exists.
+ERROR:  new row for relation "member" violates check constraint "chk_class_only_students"
+DETAIL:  Failing row contains (8, 1, Wrong Row, wrong@example.com, staff, S1, 2026-11-12).
+ERROR:  insert or update on table "book_copy" violates foreign key constraint "book_copy_title_id_fkey"
+DETAIL:  Key (title_id)=(999) is not present in table "title".
+ERROR:  update or delete on table "title" violates foreign key constraint "book_copy_title_id_fkey" on table "book_copy"
+DETAIL:  Key (title_id)=(1) is still referenced from table "book_copy".

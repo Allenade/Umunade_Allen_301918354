@@ -1,0 +1,15 @@
+           List of relations
+ Schema |    Name     | Type  |  Owner  
+--------+-------------+-------+---------
+ public | author      | table | library
+ public | book_author | table | library
+ public | book_copy   | table | library
+ public | campus      | table | library
+ public | category    | table | library
+ public | fine        | table | library
+ public | hold        | table | library
+ public | loan        | table | library
+ public | member      | table | library
+ public | title       | table | library
+(10 rows)
+
