@@ -1,0 +1,77 @@
+=== R1a: last month loans, function on the column ===
+                                                            QUERY PLAN                                                             
+-----------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=9847.17..9847.18 rows=1 width=8) (actual time=41.273..43.381 rows=1 loops=1)
+   Buffers: shared hit=4157
+   ->  Gather  (cost=9846.95..9847.17 rows=2 width=8) (actual time=41.181..43.374 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=4157
+         ->  Partial Aggregate  (cost=8846.95..8846.97 rows=1 width=8) (actual time=39.376..39.377 rows=1 loops=3)
+               Buffers: shared hit=4157
+               ->  Parallel Seq Scan on loan  (cost=0.00..8844.35 rows=1042 width=0) (actual time=0.036..39.216 rows=3736 loops=3)
+                     Filter: (date_trunc('month'::text, lent_at) = (date_trunc('month'::text, now()) - '1 mon'::interval))
+                     Rows Removed by Filter: 162925
+                     Buffers: shared hit=4157
+ Planning:
+   Buffers: shared hit=144
+ Planning Time: 0.337 ms
+ Execution Time: 43.430 ms
+(16 rows)
+
+=== R1b: last month loans, plain range ===
+                                                                 QUERY PLAN                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=440.75..440.76 rows=1 width=8) (actual time=1.290..1.290 rows=1 loops=1)
+   Buffers: shared hit=47
+   ->  Index Only Scan using idx_loan_lent_at on loan  (cost=0.43..414.94 rows=10325 width=0) (actual time=0.009..0.851 rows=11209 loops=1)
+         Index Cond: ((lent_at >= (date_trunc('month'::text, now()) - '1 mon'::interval)) AND (lent_at < date_trunc('month'::text, now())))
+         Heap Fetches: 0
+         Buffers: shared hit=47
+ Planning:
+   Buffers: shared hit=12
+ Planning Time: 0.116 ms
+ Execution Time: 1.301 ms
+(10 rows)
+
+=== R2a: never borrowed, NOT IN ===
+                                                         QUERY PLAN                                                         
+----------------------------------------------------------------------------------------------------------------------------
+ Seq Scan on member m  (cost=0.00..371564250.29 rows=61 width=17) (actual time=185.568..5326.273 rows=116 loops=1)
+   Filter: ((campus_id = 3) AND (joined_on >= (CURRENT_DATE - 7)) AND (NOT (SubPlan 1)))
+   Rows Removed by Filter: 49890
+   Buffers: shared hit=4700, temp read=98325 written=855
+   SubPlan 1
+     ->  Materialize  (cost=0.00..13610.76 rows=499984 width=4) (actual time=0.001..25.101 rows=499984 loops=116)
+           Buffers: shared hit=4157, temp read=98325 written=855
+           ->  Seq Scan on loan l  (cost=0.00..9156.84 rows=499984 width=4) (actual time=0.015..26.209 rows=499984 loops=1)
+                 Buffers: shared hit=4157
+ Planning:
+   Buffers: shared hit=58
+ Planning Time: 0.142 ms
+ JIT:
+   Functions: 8
+   Options: Inlining true, Optimization true, Expressions true, Deforming true
+   Timing: Generation 0.250 ms, Inlining 48.010 ms, Optimization 18.389 ms, Emission 9.939 ms, Total 76.589 ms
+ Execution Time: 5340.510 ms
+(17 rows)
+
+=== R2b: never borrowed, NOT EXISTS ===
+                                                                QUERY PLAN                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop Anti Join  (cost=0.42..1670.11 rows=19 width=17) (actual time=2.325..2.662 rows=116 loops=1)
+   Buffers: shared hit=891
+   ->  Seq Scan on member m  (cost=0.00..1543.12 rows=122 width=17) (actual time=2.309..2.573 rows=116 loops=1)
+         Filter: ((campus_id = 3) AND (joined_on >= (CURRENT_DATE - 7)))
+         Rows Removed by Filter: 49890
+         Buffers: shared hit=543
+   ->  Index Only Scan using idx_loan_member_lent on loan l  (cost=0.42..4.60 rows=12 width=4) (actual time=0.001..0.001 rows=0 loops=116)
+         Index Cond: (member_id = m.member_id)
+         Heap Fetches: 0
+         Buffers: shared hit=348
+ Planning:
+   Buffers: shared hit=114
+ Planning Time: 0.407 ms
+ Execution Time: 2.689 ms
+(14 rows)
+

@@ -1,0 +1,181 @@
+=== Q1: loan history for member 57 (latest 20) ===
+                                                                        QUERY PLAN                                                                         
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=7804.33..7805.49 rows=10 width=68) (actual time=10.065..12.450 rows=9 loops=1)
+   Buffers: shared hit=4231
+   ->  Gather Merge  (cost=7804.33..7805.49 rows=10 width=68) (actual time=10.064..12.448 rows=9 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         Buffers: shared hit=4231
+         ->  Sort  (cost=6804.30..6804.32 rows=5 width=68) (actual time=8.296..8.297 rows=3 loops=3)
+               Sort Key: l.lent_at DESC
+               Sort Method: quicksort  Memory: 25kB
+               Buffers: shared hit=4231
+               Worker 0:  Sort Method: quicksort  Memory: 25kB
+               Worker 1:  Sort Method: quicksort  Memory: 25kB
+               ->  Nested Loop  (cost=0.58..6804.24 rows=5 width=68) (actual time=2.245..8.273 rows=3 loops=3)
+                     Buffers: shared hit=4215
+                     ->  Nested Loop  (cost=0.29..6802.63 rows=5 width=38) (actual time=2.228..8.240 rows=3 loops=3)
+                           Buffers: shared hit=4186
+                           ->  Parallel Seq Scan on loan l  (cost=0.00..6761.08 rows=5 width=28) (actual time=2.205..8.197 rows=3 loops=3)
+                                 Filter: (member_id = 57)
+                                 Rows Removed by Filter: 166658
+                                 Buffers: shared hit=4157
+                           ->  Index Scan using book_copy_pkey on book_copy c  (cost=0.29..8.31 rows=1 width=18) (actual time=0.012..0.012 rows=1 loops=9)
+                                 Index Cond: (copy_id = l.copy_id)
+                                 Buffers: shared hit=29
+                     ->  Index Scan using title_pkey on title t  (cost=0.29..0.32 rows=1 width=38) (actual time=0.009..0.009 rows=1 loops=9)
+                           Index Cond: (title_id = c.title_id)
+                           Buffers: shared hit=29
+ Planning:
+   Buffers: shared hit=291
+ Planning Time: 0.518 ms
+ Execution Time: 12.512 ms
+(30 rows)
+
+=== Q2: overdue loans per campus with fine owed ===
+                                                                               QUERY PLAN                                                                                
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=7034.80..7034.81 rows=5 width=37) (actual time=13.366..13.370 rows=5 loops=1)
+   Sort Key: (count(*)) DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=924
+   ->  HashAggregate  (cost=7034.69..7034.74 rows=5 width=37) (actual time=13.355..13.359 rows=5 loops=1)
+         Group Key: ca.name
+         Batches: 1  Memory Usage: 24kB
+         Buffers: shared hit=921
+         ->  Hash Join  (cost=4618.45..6880.12 rows=10305 width=25) (actual time=10.901..12.817 rows=4263 loops=1)
+               Hash Cond: (c.campus_id = ca.campus_id)
+               Buffers: shared hit=921
+               ->  Hash Join  (cost=4617.33..6829.03 rows=10305 width=8) (actual time=10.888..12.367 rows=4263 loops=1)
+                     Hash Cond: (c.copy_id = l.copy_id)
+                     Buffers: shared hit=920
+                     ->  Seq Scan on book_copy c  (cost=0.00..1816.06 rows=100006 width=8) (actual time=0.001..4.891 rows=100006 loops=1)
+                           Buffers: shared hit=816
+                     ->  Hash  (cost=4488.52..4488.52 rows=10305 width=8) (actual time=1.238..1.238 rows=4263 loops=1)
+                           Buckets: 16384  Batches: 1  Memory Usage: 295kB
+                           Buffers: shared hit=104
+                           ->  Bitmap Heap Scan on loan l  (cost=175.03..4488.52 rows=10305 width=8) (actual time=0.146..0.865 rows=4263 loops=1)
+                                 Recheck Cond: (returned_at IS NULL)
+                                 Filter: (due_date < CURRENT_DATE)
+                                 Rows Removed by Filter: 5720
+                                 Heap Blocks: exact=75
+                                 Buffers: shared hit=104
+                                 ->  Bitmap Index Scan on uq_one_open_loan_per_copy  (cost=0.00..172.45 rows=10433 width=0) (actual time=0.138..0.138 rows=9983 loops=1)
+                                       Buffers: shared hit=29
+               ->  Hash  (cost=1.05..1.05 rows=5 width=25) (actual time=0.007..0.008 rows=5 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     Buffers: shared hit=1
+                     ->  Seq Scan on campus ca  (cost=0.00..1.05 rows=5 width=25) (actual time=0.004..0.004 rows=5 loops=1)
+                           Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=73
+ Planning Time: 0.258 ms
+ Execution Time: 13.427 ms
+(36 rows)
+
+=== Q3: catalogue search by author name ===
+                                                                QUERY PLAN                                                                
+------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=861.42..863.24 rows=728 width=63) (actual time=6.737..6.766 rows=774 loops=1)
+   Sort Key: t.title
+   Sort Method: quicksort  Memory: 94kB
+   Buffers: shared hit=2484
+   ->  Hash Join  (cost=155.84..826.81 rows=728 width=63) (actual time=2.830..6.388 rows=774 loops=1)
+         Hash Cond: (t.category_id = cat.category_id)
+         Buffers: shared hit=2481
+         ->  Nested Loop  (cost=154.39..823.05 rows=728 width=56) (actual time=2.820..6.283 rows=774 loops=1)
+               Buffers: shared hit=2480
+               ->  Hash Join  (cost=154.10..563.84 rows=728 width=18) (actual time=2.815..5.372 rows=774 loops=1)
+                     Hash Cond: (ba.author_id = a.author_id)
+                     Buffers: shared hit=158
+                     ->  Seq Scan on book_author ba  (cost=0.00..346.77 rows=23977 width=8) (actual time=0.001..1.143 rows=23977 loops=1)
+                           Buffers: shared hit=107
+                     ->  Hash  (cost=151.06..151.06 rows=243 width=18) (actual time=2.811..2.812 rows=252 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 21kB
+                           Buffers: shared hit=51
+                           ->  Seq Scan on author a  (cost=0.00..151.06 rows=243 width=18) (actual time=0.004..2.780 rows=252 loops=1)
+                                 Filter: ((full_name)::text ~~* '%achebe%'::text)
+                                 Rows Removed by Filter: 7753
+                                 Buffers: shared hit=51
+               ->  Index Scan using title_pkey on title t  (cost=0.29..0.36 rows=1 width=42) (actual time=0.001..0.001 rows=1 loops=774)
+                     Index Cond: (title_id = ba.title_id)
+                     Buffers: shared hit=2322
+         ->  Hash  (cost=1.20..1.20 rows=20 width=15) (actual time=0.007..0.007 rows=20 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 9kB
+               Buffers: shared hit=1
+               ->  Seq Scan on category cat  (cost=0.00..1.20 rows=20 width=15) (actual time=0.002..0.004 rows=20 loops=1)
+                     Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=113
+ Planning Time: 0.414 ms
+ Execution Time: 6.809 ms
+(33 rows)
+
+=== Q4: top 10 most borrowed titles, last 90 days ===
+                                                                            QUERY PLAN                                                                            
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Limit  (cost=16966.93..16966.96 rows=10 width=46) (actual time=56.617..56.687 rows=10 loops=1)
+   Buffers: shared hit=7358
+   ->  Sort  (cost=16966.93..17016.94 rows=20004 width=46) (actual time=56.616..56.684 rows=10 loops=1)
+         Sort Key: (count(*)) DESC
+         Sort Method: top-N heapsort  Memory: 26kB
+         Buffers: shared hit=7358
+         ->  Finalize HashAggregate  (cost=16334.61..16534.65 rows=20004 width=46) (actual time=53.674..55.114 rows=15864 loops=1)
+               Group Key: t.title_id
+               Batches: 1  Memory Usage: 2321kB
+               Buffers: shared hit=7358
+               ->  Gather  (cost=12735.63..16171.02 rows=32718 width=46) (actual time=46.422..49.108 rows=26645 loops=1)
+                     Workers Planned: 2
+                     Workers Launched: 2
+                     Buffers: shared hit=7358
+                     ->  Partial HashAggregate  (cost=11735.63..11899.22 rows=16359 width=46) (actual time=44.807..45.697 rows=8882 loops=3)
+                           Group Key: t.title_id
+                           Batches: 1  Memory Usage: 1809kB
+                           Buffers: shared hit=7358
+                           Worker 0:  Batches: 1  Memory Usage: 1809kB
+                           Worker 1:  Batches: 1  Memory Usage: 1809kB
+                           ->  Hash Join  (cost=3765.23..11653.84 rows=16359 width=38) (actual time=20.911..42.171 rows=12544 loops=3)
+                                 Hash Cond: (c.title_id = t.title_id)
+                                 Buffers: shared hit=7358
+                                 ->  Hash Join  (cost=3066.14..10911.79 rows=16359 width=4) (actual time=16.903..35.665 rows=12544 loops=3)
+                                       Hash Cond: (l.copy_id = c.copy_id)
+                                       Buffers: shared hit=6605
+                                       ->  Parallel Seq Scan on loan l  (cost=0.00..7802.72 rows=16359 width=4) (actual time=0.009..16.011 rows=12544 loops=3)
+                                             Filter: (lent_at >= (now() - '90 days'::interval))
+                                             Rows Removed by Filter: 154118
+                                             Buffers: shared hit=4157
+                                       ->  Hash  (cost=1816.06..1816.06 rows=100006 width=8) (actual time=16.542..16.543 rows=100006 loops=3)
+                                             Buckets: 131072  Batches: 1  Memory Usage: 4931kB
+                                             Buffers: shared hit=2448
+                                             ->  Seq Scan on book_copy c  (cost=0.00..1816.06 rows=100006 width=8) (actual time=0.014..6.121 rows=100006 loops=3)
+                                                   Buffers: shared hit=2448
+                                 ->  Hash  (cost=449.04..449.04 rows=20004 width=38) (actual time=3.918..3.919 rows=20004 loops=3)
+                                       Buckets: 32768  Batches: 1  Memory Usage: 1625kB
+                                       Buffers: shared hit=747
+                                       ->  Seq Scan on title t  (cost=0.00..449.04 rows=20004 width=38) (actual time=0.008..1.417 rows=20004 loops=3)
+                                             Buffers: shared hit=747
+ Planning:
+   Buffers: shared hit=23
+ Planning Time: 0.161 ms
+ Execution Time: 57.540 ms
+(44 rows)
+
+=== Q5: available copies of title 1736 at campus 2 ===
+                                                                QUERY PLAN                                                                
+------------------------------------------------------------------------------------------------------------------------------------------
+ Bitmap Heap Scan on book_copy c  (cost=467.06..1634.54 rows=1 width=17) (actual time=0.552..2.080 rows=6 loops=1)
+   Recheck Cond: (campus_id = 2)
+   Filter: ((title_id = 1736) AND (status = 'available'::copy_status))
+   Rows Removed by Filter: 20099
+   Heap Blocks: exact=816
+   Buffers: shared hit=897
+   ->  Bitmap Index Scan on uq_accession_per_campus  (cost=0.00..467.06 rows=20085 width=0) (actual time=0.474..0.475 rows=20105 loops=1)
+         Index Cond: (campus_id = 2)
+         Buffers: shared hit=81
+ Planning:
+   Buffers: shared hit=9
+ Planning Time: 0.050 ms
+ Execution Time: 2.090 ms
+(13 rows)
+

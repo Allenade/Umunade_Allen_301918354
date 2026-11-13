@@ -1,0 +1,50 @@
+=== Q1: loan history for member 57 (latest 20) ===
+ Execution Time: 0.204 ms
+=== Q2: overdue loans per campus with fine owed ===
+ Execution Time: 13.115 ms
+=== Q3: catalogue search by author name ===
+ Execution Time: 4.101 ms
+=== Q4: top 10 most borrowed titles, last 90 days ===
+ Execution Time: 46.331 ms
+=== Q5: available copies of title 1736 at campus 2 ===
+ Execution Time: 0.021 ms
+=== Q1: loan history for member 57 (latest 20) ===
+ Execution Time: 0.195 ms
+=== Q2: overdue loans per campus with fine owed ===
+ Execution Time: 12.741 ms
+=== Q3: catalogue search by author name ===
+ Execution Time: 4.068 ms
+=== Q4: top 10 most borrowed titles, last 90 days ===
+ Execution Time: 44.721 ms
+=== Q5: available copies of title 1736 at campus 2 ===
+ Execution Time: 0.021 ms
+=== Q1: loan history for member 57 (latest 20) ===
+ Execution Time: 0.191 ms
+=== Q2: overdue loans per campus with fine owed ===
+ Execution Time: 12.797 ms
+=== Q3: catalogue search by author name ===
+ Execution Time: 4.111 ms
+=== Q4: top 10 most borrowed titles, last 90 days ===
+ Execution Time: 44.217 ms
+=== Q5: available copies of title 1736 at campus 2 ===
+ Execution Time: 0.020 ms
+=== Q1: loan history for member 57 (latest 20) ===
+ Execution Time: 0.216 ms
+=== Q2: overdue loans per campus with fine owed ===
+ Execution Time: 12.875 ms
+=== Q3: catalogue search by author name ===
+ Execution Time: 4.006 ms
+=== Q4: top 10 most borrowed titles, last 90 days ===
+ Execution Time: 44.272 ms
+=== Q5: available copies of title 1736 at campus 2 ===
+ Execution Time: 0.021 ms
+=== Q1: loan history for member 57 (latest 20) ===
+ Execution Time: 0.193 ms
+=== Q2: overdue loans per campus with fine owed ===
+ Execution Time: 12.818 ms
+=== Q3: catalogue search by author name ===
+ Execution Time: 4.022 ms
+=== Q4: top 10 most borrowed titles, last 90 days ===
+ Execution Time: 45.399 ms
+=== Q5: available copies of title 1736 at campus 2 ===
+ Execution Time: 0.021 ms

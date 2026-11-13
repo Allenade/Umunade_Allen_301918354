@@ -1,0 +1,21 @@
+Timing is on.
+BEGIN
+Time: 0.070 ms
+INSERT 0 50000
+Time: 581.297 ms
+ROLLBACK
+Time: 0.421 ms
+BEGIN
+Time: 0.385 ms
+INSERT 0 50000
+Time: 573.588 ms
+ROLLBACK
+Time: 0.102 ms
+BEGIN
+Time: 0.053 ms
+INSERT 0 50000
+Time: 587.165 ms
+ROLLBACK
+Time: 0.230 ms
+Timing is off.
+VACUUM

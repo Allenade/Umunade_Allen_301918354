@@ -1,0 +1,62 @@
+Timing is on.
+ setseed 
+---------
+ 
+(1 row)
+
+Time: 0.305 ms
+BEGIN
+Time: 0.033 ms
+INSERT 0 3
+Time: 0.387 ms
+INSERT 0 16
+Time: 0.210 ms
+INSERT 0 50000
+Time: 532.654 ms
+INSERT 0 8000
+Time: 22.684 ms
+INSERT 0 20000
+Time: 195.405 ms
+INSERT 0 20000
+Time: 166.386 ms
+INSERT 0 3972
+Time: 40.107 ms
+INSERT 0 100000
+Time: 899.639 ms
+SELECT 502
+Time: 4.020 ms
+INSERT 0 490000
+Time: 6293.508 ms (00:06.294)
+INSERT 0 9981
+Time: 590.762 ms
+UPDATE 9983
+Time: 119.346 ms
+UPDATE 916
+Time: 23.776 ms
+INSERT 0 73382
+Time: 521.689 ms
+INSERT 0 36000
+Time: 311.433 ms
+INSERT 0 4000
+Time: 43.778 ms
+COMMIT
+Time: 2.299 ms
+VACUUM
+Time: 400.521 ms
+ table_name  | row_count 
+-------------+-----------
+ campus      |         5
+ member      |     50006
+ category    |        20
+ title       |     20004
+ author      |      8005
+ book_author |     23977
+ book_copy   |    100006
+ loan        |    499984
+ open loans  |      9983
+ overdue     |      4263
+ hold        |     40001
+ fine        |     73383
+(12 rows)
+
+Time: 24.610 ms
