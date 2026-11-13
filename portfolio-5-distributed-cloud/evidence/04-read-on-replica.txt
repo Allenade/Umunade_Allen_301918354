@@ -1,0 +1,18 @@
+=== Replica: the new loan has arrived ===
+SELECT l.loan_id, l.copy_id, l.member_id, c.status AS copy_status
+FROM loan l JOIN book_copy c ON c.copy_id = l.copy_id
+WHERE l.copy_id = 2 AND l.returned_at IS NULL;
+ loan_id | copy_id | member_id | copy_status 
+---------+---------+-----------+-------------
+       4 |       2 |         4 | on_loan
+(1 row)
+
+=== Replica: replication delay ===
+SELECT pg_last_wal_replay_lsn() AS replica_replayed_lsn,
+       pg_last_xact_replay_timestamp() AS last_replayed_commit,
+       clock_timestamp() - pg_last_xact_replay_timestamp() AS time_since_last_replayed_commit;
+ replica_replayed_lsn |     last_replayed_commit     | time_since_last_replayed_commit 
+----------------------+------------------------------+---------------------------------
+ 0/30007F8            | 2026-11-13 07:21:11.38433+00 | 00:00:00.642649
+(1 row)
+

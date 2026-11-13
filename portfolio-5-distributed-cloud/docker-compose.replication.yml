@@ -1,0 +1,53 @@
+# Portfolio 5: PostgreSQL 16 primary + one streaming replica.
+# Separate from the root docker-compose.yml (which stays as it is).
+#   primary -> localhost:5434   (read and write)
+#   replica -> localhost:5435   (read only, copies the primary)
+# Start from the repository root:
+#   docker compose -f portfolio-5-distributed-cloud/docker-compose.replication.yml up -d
+# Remove everything again (including the data):
+#   docker compose -f portfolio-5-distributed-cloud/docker-compose.replication.yml down -v
+
+services:
+  pg_primary:
+    image: postgres:16-alpine
+    container_name: naalya_pg_primary
+    environment:
+      POSTGRES_USER: library
+      POSTGRES_PASSWORD: library
+      POSTGRES_DB: library
+    command: ["postgres", "-c", "wal_level=replica", "-c", "max_wal_senders=5",
+              "-c", "wal_keep_size=64MB", "-c", "cluster_name=primary"]
+    ports:
+      - "5434:5432"
+    volumes:
+      - primary_data:/var/lib/postgresql/data
+      # Run once, the first time the primary starts (in name order):
+      - ./docker/00-replication-user.sh:/docker-entrypoint-initdb.d/00-replication-user.sh:ro
+      - ../portfolio-1-database-design/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ../portfolio-1-database-design/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "library", "-d", "library"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  pg_replica:
+    image: postgres:16-alpine
+    container_name: naalya_pg_replica
+    user: postgres
+    environment:
+      PGDATA: /var/lib/postgresql/data
+      REPLICATION_PASSWORD: replicator
+    entrypoint: ["sh", "/replica-entrypoint.sh"]
+    ports:
+      - "5435:5432"
+    volumes:
+      - replica_data:/var/lib/postgresql/data
+      - ./docker/replica-entrypoint.sh:/replica-entrypoint.sh:ro
+    depends_on:
+      pg_primary:
+        condition: service_healthy
+
+volumes:
+  primary_data:
+  replica_data:

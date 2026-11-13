@@ -1,0 +1,11 @@
+SELECT tableoid::regclass AS partition, count(*) FROM loan_by_campus GROUP BY 1 ORDER BY 1;
+     partition     | count 
+-------------------+-------
+ loan_campus_1     | 47500
+ loan_campus_2     | 50000
+ loan_campus_3     | 50000
+ loan_campus_4     | 50000
+ loan_campus_5     | 50000
+ loan_campus_other |  2500
+(6 rows)
+

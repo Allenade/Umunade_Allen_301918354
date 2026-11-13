@@ -1,0 +1,55 @@
+=== Primary: asynchronous (default) ===
+SELECT application_name, sync_state FROM pg_stat_replication;
+ application_name | sync_state 
+------------------+------------
+ replica1         | async
+(1 row)
+
+=== Primary: make replica1 a synchronous standby ===
+ALTER SYSTEM SET synchronous_standby_names = 'replica1';
+ALTER SYSTEM
+SELECT pg_reload_conf();
+ pg_reload_conf 
+----------------
+ t
+(1 row)
+
+SELECT pg_sleep(1);
+ pg_sleep 
+----------
+ 
+(1 row)
+
+SELECT application_name, sync_state FROM pg_stat_replication;
+ application_name | sync_state 
+------------------+------------
+ replica1         | sync
+(1 row)
+
+=== Primary: a write now waits for the replica before COMMIT returns ===
+Timing is on.
+UPDATE book_copy SET shelf = 'S1' WHERE copy_id = 6;
+UPDATE 1
+Time: 1.753 ms
+Timing is off.
+=== Primary: back to asynchronous ===
+ALTER SYSTEM RESET synchronous_standby_names;
+ALTER SYSTEM
+SELECT pg_reload_conf();
+ pg_reload_conf 
+----------------
+ t
+(1 row)
+
+SELECT pg_sleep(1);
+ pg_sleep 
+----------
+ 
+(1 row)
+
+SELECT application_name, sync_state FROM pg_stat_replication;
+ application_name | sync_state 
+------------------+------------
+ replica1         | async
+(1 row)
+

@@ -1,0 +1,189 @@
+DROP TABLE IF EXISTS loan_by_campus CASCADE;
+NOTICE:  table "loan_by_campus" does not exist, skipping
+DROP TABLE
+CREATE TABLE loan_by_campus (
+    loan_id     BIGINT GENERATED ALWAYS AS IDENTITY,
+    campus_id   INT         NOT NULL,
+    copy_id     INT         NOT NULL,
+    member_id   INT         NOT NULL,
+    lent_at     TIMESTAMPTZ NOT NULL,
+    due_date    DATE        NOT NULL,
+    returned_at TIMESTAMPTZ,
+    PRIMARY KEY (loan_id, campus_id),
+    CHECK (due_date >= lent_at::date)
+) PARTITION BY LIST (campus_id);
+CREATE TABLE
+CREATE TABLE loan_campus_1 PARTITION OF loan_by_campus FOR VALUES IN (1);
+CREATE TABLE
+CREATE TABLE loan_campus_2 PARTITION OF loan_by_campus FOR VALUES IN (2);
+CREATE TABLE
+CREATE TABLE loan_campus_3 PARTITION OF loan_by_campus FOR VALUES IN (3);
+CREATE TABLE
+CREATE TABLE loan_campus_4 PARTITION OF loan_by_campus FOR VALUES IN (4);
+CREATE TABLE
+CREATE TABLE loan_campus_5 PARTITION OF loan_by_campus FOR VALUES IN (5);
+CREATE TABLE
+CREATE TABLE loan_campus_other PARTITION OF loan_by_campus DEFAULT;
+CREATE TABLE
+CREATE INDEX ON loan_by_campus (member_id);
+CREATE INDEX
+Timing is on.
+INSERT INTO loan_by_campus (campus_id, copy_id, member_id, lent_at, due_date, returned_at)
+SELECT CASE WHEN g % 100 = 0 THEN 6 ELSE 1 + (g % 5) END,
+       1 + (g % 20000),
+       1 + (g % 50000),
+       now() - (g % 1095) * interval '1 day',
+       (now() - (g % 1095) * interval '1 day' + interval '14 days')::date,
+       CASE WHEN g % 1095 < 20 AND g % 3 = 0 THEN NULL
+            ELSE now() - (g % 1095) * interval '1 day' + interval '7 days' END
+FROM generate_series(1, 250000) AS g;
+INSERT 0 250000
+Time: 653.226 ms
+Timing is off.
+ANALYZE loan_by_campus;
+ANALYZE
+=== Each row was routed to its campus partition automatically ===
+SELECT tableoid::regclass AS partition, count(*) AS loans
+FROM loan_by_campus
+GROUP BY 1 ORDER BY 1;
+     partition     | loans 
+-------------------+-------
+ loan_campus_1     | 47500
+ loan_campus_2     | 50000
+ loan_campus_3     | 50000
+ loan_campus_4     | 50000
+ loan_campus_5     | 50000
+ loan_campus_other |  2500
+(6 rows)
+
+=== P1. Open loans at campus 2: only loan_campus_2 is scanned (partition pruning) ===
+EXPLAIN (ANALYZE, COSTS OFF)
+SELECT count(*) FROM loan_by_campus WHERE campus_id = 2 AND returned_at IS NULL;
+                                         QUERY PLAN                                         
+--------------------------------------------------------------------------------------------
+ Aggregate (actual time=1.406..1.406 rows=1 loops=1)
+   ->  Seq Scan on loan_campus_2 loan_by_campus (actual time=0.003..1.399 rows=229 loops=1)
+         Filter: ((returned_at IS NULL) AND (campus_id = 2))
+         Rows Removed by Filter: 49771
+ Planning Time: 0.072 ms
+ Execution Time: 1.412 ms
+(6 rows)
+
+=== P2. The same question with no campus filter: every partition is scanned ===
+EXPLAIN (ANALYZE, COSTS OFF)
+SELECT count(*) FROM loan_by_campus WHERE returned_at IS NULL;
+                                              QUERY PLAN                                               
+-------------------------------------------------------------------------------------------------------
+ Aggregate (actual time=7.220..7.220 rows=1 loops=1)
+   ->  Append (actual time=0.002..7.179 rows=1602 loops=1)
+         ->  Seq Scan on loan_campus_1 loan_by_campus_1 (actual time=0.002..1.435 rows=434 loops=1)
+               Filter: (returned_at IS NULL)
+               Rows Removed by Filter: 47066
+         ->  Seq Scan on loan_campus_2 loan_by_campus_2 (actual time=0.004..1.334 rows=229 loops=1)
+               Filter: (returned_at IS NULL)
+               Rows Removed by Filter: 49771
+         ->  Seq Scan on loan_campus_3 loan_by_campus_3 (actual time=0.002..1.446 rows=229 loops=1)
+               Filter: (returned_at IS NULL)
+               Rows Removed by Filter: 49771
+         ->  Seq Scan on loan_campus_4 loan_by_campus_4 (actual time=0.002..1.390 rows=458 loops=1)
+               Filter: (returned_at IS NULL)
+               Rows Removed by Filter: 49542
+         ->  Seq Scan on loan_campus_5 loan_by_campus_5 (actual time=0.005..1.440 rows=229 loops=1)
+               Filter: (returned_at IS NULL)
+               Rows Removed by Filter: 49771
+         ->  Seq Scan on loan_campus_other loan_by_campus_6 (actual time=0.005..0.079 rows=23 loops=1)
+               Filter: (returned_at IS NULL)
+               Rows Removed by Filter: 2477
+ Planning Time: 0.109 ms
+ Execution Time: 7.235 ms
+(22 rows)
+
+=== P3. Two campuses: only those two partitions are scanned ===
+EXPLAIN (ANALYZE, COSTS OFF)
+SELECT campus_id, count(*) FROM loan_by_campus WHERE campus_id IN (1, 3) GROUP BY campus_id;
+                                                           QUERY PLAN                                                            
+---------------------------------------------------------------------------------------------------------------------------------
+ Finalize GroupAggregate (actual time=5.722..6.605 rows=2 loops=1)
+   Group Key: loan_by_campus.campus_id
+   ->  Gather Merge (actual time=5.720..6.603 rows=5 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         ->  Sort (actual time=4.707..4.708 rows=2 loops=3)
+               Sort Key: loan_by_campus.campus_id
+               Sort Method: quicksort  Memory: 25kB
+               Worker 0:  Sort Method: quicksort  Memory: 25kB
+               Worker 1:  Sort Method: quicksort  Memory: 25kB
+               ->  Partial HashAggregate (actual time=4.697..4.697 rows=2 loops=3)
+                     Group Key: loan_by_campus.campus_id
+                     Batches: 1  Memory Usage: 24kB
+                     Worker 0:  Batches: 1  Memory Usage: 24kB
+                     Worker 1:  Batches: 1  Memory Usage: 24kB
+                     ->  Parallel Append (actual time=0.004..3.102 rows=32500 loops=3)
+                           ->  Parallel Seq Scan on loan_campus_3 loan_by_campus_2 (actual time=0.003..1.149 rows=16667 loops=3)
+                                 Filter: (campus_id = ANY ('{1,3}'::integer[]))
+                           ->  Parallel Seq Scan on loan_campus_1 loan_by_campus_1 (actual time=0.004..1.311 rows=23750 loops=2)
+                                 Filter: (campus_id = ANY ('{1,3}'::integer[]))
+ Planning Time: 0.110 ms
+ Execution Time: 6.625 ms
+(22 rows)
+
+=== P4. P1 again with pruning switched off, for comparison ===
+SET enable_partition_pruning = off;
+SET
+EXPLAIN (ANALYZE, COSTS OFF)
+SELECT count(*) FROM loan_by_campus WHERE campus_id = 2 AND returned_at IS NULL;
+                                                        QUERY PLAN                                                         
+---------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate (actual time=4.054..4.951 rows=1 loops=1)
+   ->  Gather (actual time=4.011..4.948 rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         ->  Partial Aggregate (actual time=2.818..2.819 rows=1 loops=3)
+               ->  Parallel Append (actual time=2.053..2.816 rows=76 loops=3)
+                     ->  Parallel Seq Scan on loan_campus_2 loan_by_campus_2 (actual time=0.003..2.256 rows=229 loops=1)
+                           Filter: ((returned_at IS NULL) AND (campus_id = 2))
+                           Rows Removed by Filter: 49771
+                     ->  Parallel Seq Scan on loan_campus_3 loan_by_campus_3 (actual time=1.670..1.670 rows=0 loops=1)
+                           Filter: ((returned_at IS NULL) AND (campus_id = 2))
+                           Rows Removed by Filter: 50000
+                     ->  Parallel Seq Scan on loan_campus_4 loan_by_campus_4 (actual time=0.511..0.511 rows=0 loops=3)
+                           Filter: ((returned_at IS NULL) AND (campus_id = 2))
+                           Rows Removed by Filter: 16667
+                     ->  Parallel Seq Scan on loan_campus_5 loan_by_campus_5 (actual time=1.455..1.455 rows=0 loops=1)
+                           Filter: ((returned_at IS NULL) AND (campus_id = 2))
+                           Rows Removed by Filter: 50000
+                     ->  Parallel Seq Scan on loan_campus_1 loan_by_campus_1 (actual time=1.446..1.446 rows=0 loops=1)
+                           Filter: ((returned_at IS NULL) AND (campus_id = 2))
+                           Rows Removed by Filter: 47500
+                     ->  Parallel Seq Scan on loan_campus_other loan_by_campus_6 (actual time=0.074..0.074 rows=0 loops=1)
+                           Filter: ((returned_at IS NULL) AND (campus_id = 2))
+                           Rows Removed by Filter: 2500
+ Planning Time: 0.095 ms
+ Execution Time: 4.972 ms
+(26 rows)
+
+RESET enable_partition_pruning;
+RESET
+=== P5. A campus can be detached as a separate table (e.g. to move it to its own server) ===
+ALTER TABLE loan_by_campus DETACH PARTITION loan_campus_5;
+ALTER TABLE
+SELECT count(*) AS rows_left_in_loan_by_campus FROM loan_by_campus;
+ rows_left_in_loan_by_campus 
+-----------------------------
+                      200000
+(1 row)
+
+SELECT count(*) AS rows_in_detached_loan_campus_5 FROM loan_campus_5;
+ rows_in_detached_loan_campus_5 
+--------------------------------
+                          50000
+(1 row)
+
+ALTER TABLE loan_by_campus ATTACH PARTITION loan_campus_5 FOR VALUES IN (5);
+ALTER TABLE
+SELECT count(*) AS rows_after_attaching_again FROM loan_by_campus;
+ rows_after_attaching_again 
+----------------------------
+                     250000
+(1 row)
+

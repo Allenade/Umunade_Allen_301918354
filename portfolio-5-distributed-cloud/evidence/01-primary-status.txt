@@ -1,0 +1,25 @@
+=== Primary: is this server in recovery (read-only standby)? ===
+SELECT pg_is_in_recovery() AS in_recovery, current_setting('cluster_name') AS server;
+ in_recovery | server  
+-------------+---------
+ f           | primary
+(1 row)
+
+=== Primary: connected replicas (pg_stat_replication) ===
+SELECT application_name, client_addr, state, sync_state,
+       sent_lsn, write_lsn, flush_lsn, replay_lsn,
+       pg_wal_lsn_diff(sent_lsn, replay_lsn) AS bytes_behind,
+       write_lag, flush_lag, replay_lag
+FROM pg_stat_replication;
+ application_name | client_addr |   state   | sync_state | sent_lsn  | write_lsn | flush_lsn | replay_lsn | bytes_behind |    write_lag    |    flush_lag    |   replay_lag    
+------------------+-------------+-----------+------------+-----------+-----------+-----------+------------+--------------+-----------------+-----------------+-----------------
+ replica1         | 172.23.0.3  | streaming | async      | 0/3000000 | 0/3000000 | 0/3000000 | 0/3000000  |            0 | 00:00:00.000038 | 00:00:00.000038 | 00:00:00.000038
+(1 row)
+
+=== Primary: replication slot ===
+SELECT slot_name, slot_type, active, restart_lsn FROM pg_replication_slots;
+ slot_name | slot_type | active | restart_lsn 
+-----------+-----------+--------+-------------
+ replica1  | physical  | t      | 0/3000000
+(1 row)
+

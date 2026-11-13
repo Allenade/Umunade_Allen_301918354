@@ -1,0 +1,16 @@
+=== Replica: try to lend copy 4 here ===
+INSERT INTO loan (copy_id, member_id, lent_by, due_date) VALUES (4, 6, 5, CURRENT_DATE + 14);
+=== Replica: try to change a copy ===
+UPDATE book_copy SET shelf = 'Z9' WHERE copy_id = 4;
+ERROR:  cannot execute INSERT in a read-only transaction
+ERROR:  cannot execute UPDATE in a read-only transaction
+=== Replica: try to create a table ===
+CREATE TABLE test_table (id int);
+ERROR:  cannot execute CREATE TABLE in a read-only transaction
+=== Replica: reading still works ===
+SELECT copy_id, status, shelf FROM book_copy WHERE copy_id = 4;
+ copy_id |  status   | shelf 
+---------+-----------+-------
+       4 | available | B1
+(1 row)
+

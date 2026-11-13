@@ -1,0 +1,2 @@
+naalya_pg_primary
+Error response from daemon: container f6c8adb5e6147fdacf4899e70318df6961392a42ba9fb5908d00e99856ce971a is not running

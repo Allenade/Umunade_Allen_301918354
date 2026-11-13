@@ -1,0 +1,38 @@
+=== Primary: member 4 borrows copy 2 ===
+BEGIN;
+BEGIN
+INSERT INTO loan (copy_id, member_id, lent_by, due_date)
+VALUES (2, 4, 1, CURRENT_DATE + 14)
+RETURNING loan_id, copy_id, member_id, lent_at;
+ loan_id | copy_id | member_id |            lent_at            
+---------+---------+-----------+-------------------------------
+       4 |       2 |         4 | 2026-11-13 07:21:11.381183+00
+(1 row)
+
+INSERT 0 1
+UPDATE book_copy SET status = 'on_loan' WHERE copy_id = 2;
+UPDATE 1
+COMMIT;
+COMMIT
+SELECT pg_current_wal_lsn() AS primary_lsn_after_commit, clock_timestamp() AS committed_at;
+ primary_lsn_after_commit |         committed_at          
+--------------------------+-------------------------------
+ 0/30007F8                | 2026-11-13 07:21:11.402472+00
+(1 row)
+
+=== Primary: half a second later, how far behind is the replica? ===
+SELECT pg_sleep(0.5);
+ pg_sleep 
+----------
+ 
+(1 row)
+
+SELECT application_name, replay_lsn,
+       pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) AS bytes_behind,
+       replay_lag
+FROM pg_stat_replication;
+ application_name | replay_lsn | bytes_behind |   replay_lag   
+------------------+------------+--------------+----------------
+ replica1         | 0/30007F8  |            0 | 00:00:00.01734
+(1 row)
+

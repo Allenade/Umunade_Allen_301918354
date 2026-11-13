@@ -1,0 +1,43 @@
+=== Replica: still a read-only standby? ===
+SELECT pg_is_in_recovery() AS in_recovery;
+ in_recovery 
+-------------
+ t
+(1 row)
+
+=== Replica: promote it to be the new primary ===
+SELECT pg_promote(wait => true);
+ pg_promote 
+------------
+ t
+(1 row)
+
+=== New primary: no longer in recovery ===
+SELECT pg_is_in_recovery() AS in_recovery, current_setting('transaction_read_only') AS read_only;
+ in_recovery | read_only 
+-------------+-----------
+ f           | off
+(1 row)
+
+=== New primary: lending works again (the write that failed in 05 now succeeds) ===
+INSERT INTO loan (copy_id, member_id, lent_by, due_date)
+VALUES (4, 6, 5, CURRENT_DATE + 14)
+RETURNING loan_id, copy_id, member_id;
+ loan_id | copy_id | member_id 
+---------+---------+-----------
+      37 |       4 |         6
+(1 row)
+
+INSERT 0 1
+UPDATE book_copy SET status = 'on_loan' WHERE copy_id = 4;
+UPDATE 1
+=== New primary: nothing committed on the old primary was lost ===
+SELECT loan_id, copy_id, member_id FROM loan WHERE returned_at IS NULL ORDER BY loan_id;
+ loan_id | copy_id | member_id 
+---------+---------+-----------
+       1 |       1 |         2
+       2 |       3 |         3
+       4 |       2 |         4
+      37 |       4 |         6
+(4 rows)
+

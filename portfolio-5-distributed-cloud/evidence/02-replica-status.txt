@@ -1,0 +1,24 @@
+=== Replica: is this server in recovery (read-only standby)? ===
+SELECT pg_is_in_recovery() AS in_recovery, current_setting('cluster_name') AS server,
+       current_setting('transaction_read_only') AS read_only;
+ in_recovery |  server  | read_only 
+-------------+----------+-----------
+ t           | replica1 | on
+(1 row)
+
+=== Replica: WAL receiver (pg_stat_wal_receiver) ===
+SELECT status, sender_host, sender_port, slot_name, written_lsn, flushed_lsn
+FROM pg_stat_wal_receiver;
+  status   | sender_host | sender_port | slot_name | written_lsn | flushed_lsn 
+-----------+-------------+-------------+-----------+-------------+-------------
+ streaming | pg_primary  |        5432 | replica1  |             | 0/3000000
+(1 row)
+
+=== Replica: the Part 1 data was copied from the primary ===
+SELECT (SELECT count(*) FROM campus) AS campuses, (SELECT count(*) FROM member) AS members,
+       (SELECT count(*) FROM book_copy) AS copies, (SELECT count(*) FROM loan) AS loans;
+ campuses | members | copies | loans 
+----------+---------+--------+-------
+        2 |       6 |      6 |     3
+(1 row)
+
