@@ -1,0 +1,16 @@
+[setup] A: make fine 1 unpaid with UGX 3,000 owing
+UPDATE fine SET status = 'unpaid', paid_at = NULL, amount = 3000 WHERE fine_id = 1;
+UPDATE 1
+[1s] A: take 1,000
+BEGIN;
+BEGIN
+UPDATE fine SET amount = amount - 1000 WHERE fine_id = 1 RETURNING fine_id, amount;
+ fine_id | amount  
+---------+---------
+       1 | 2000.00
+(1 row)
+
+UPDATE 1
+[3s] A: COMMIT
+COMMIT;
+COMMIT

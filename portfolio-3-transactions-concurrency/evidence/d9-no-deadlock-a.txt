@@ -1,0 +1,17 @@
+[0s] A: lock copies 2 and 4 in copy_id order
+BEGIN;
+BEGIN
+SELECT copy_id FROM book_copy WHERE copy_id IN (2, 4) ORDER BY copy_id FOR UPDATE;
+ copy_id 
+---------
+       2
+       4
+(2 rows)
+
+UPDATE book_copy SET shelf = 'R1' WHERE copy_id = 2;
+UPDATE 1
+[2s] A: move copy 4 and COMMIT
+UPDATE book_copy SET shelf = 'R1' WHERE copy_id = 4;
+UPDATE 1
+COMMIT;
+COMMIT

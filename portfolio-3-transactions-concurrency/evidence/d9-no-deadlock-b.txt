@@ -1,0 +1,27 @@
+[1s] B: lock copies 2 and 4 in copy_id order (waits for A)
+BEGIN;
+BEGIN
+Timing is on.
+SELECT copy_id FROM book_copy WHERE copy_id IN (2, 4) ORDER BY copy_id FOR UPDATE;
+ copy_id 
+---------
+       2
+       4
+(2 rows)
+
+Time: 1005.580 ms (00:01.006)
+Timing is off.
+UPDATE book_copy SET shelf = 'R2' WHERE copy_id = 4;
+UPDATE 1
+UPDATE book_copy SET shelf = 'R2' WHERE copy_id = 2;
+UPDATE 1
+COMMIT;
+COMMIT
+B: no deadlock, both transactions finished. Final shelves:
+SELECT copy_id, shelf FROM book_copy WHERE copy_id IN (2, 4) ORDER BY copy_id;
+ copy_id | shelf 
+---------+-------
+       2 | R2
+       4 | R2
+(2 rows)
+

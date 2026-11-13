@@ -1,0 +1,5 @@
+2026-11-13 07:16:35.264 UTC [35] LOG:  database system was interrupted; last known up at 2026-11-13 06:42:16 UTC
+2026-11-13 07:16:35.308 UTC [35] LOG:  database system was not properly shut down; automatic recovery in progress
+2026-11-13 07:16:35.310 UTC [35] LOG:  redo starts at 0/E398988
+2026-11-13 07:16:36.682 UTC [35] LOG:  redo done at 0/1A8EBCE8 system usage: CPU: user: 0.42 s, system: 0.95 s, elapsed: 1.37 s
+2026-11-13 07:16:36.732 UTC [1] LOG:  database system is ready to accept connections

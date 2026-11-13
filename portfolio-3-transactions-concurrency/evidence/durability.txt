@@ -1,0 +1,14 @@
+Open loans after the server restart:
+SELECT l.loan_id, l.copy_id, l.member_id, c.status
+FROM loan l JOIN book_copy c ON c.copy_id = l.copy_id
+WHERE l.returned_at IS NULL
+ORDER BY l.loan_id;
+ loan_id | copy_id | member_id | status  
+---------+---------+-----------+---------
+       1 |       1 |         2 | on_loan
+       2 |       3 |         3 | on_loan
+       4 |       2 |         4 | on_loan
+       8 |       6 |         6 | on_loan
+       9 |       4 |         6 | on_loan
+(5 rows)
+

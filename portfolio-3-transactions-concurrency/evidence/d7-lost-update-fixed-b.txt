@@ -1,0 +1,22 @@
+[2s] B: take 500 (waits for A)
+BEGIN;
+BEGIN
+Timing is on.
+UPDATE fine SET amount = amount - 500 WHERE fine_id = 1 RETURNING fine_id, amount;
+ fine_id | amount  
+---------+---------
+       1 | 1500.00
+(1 row)
+
+UPDATE 1
+Time: 1009.718 ms (00:01.010)
+Timing is off.
+COMMIT;
+COMMIT
+B: final amount - 1500, both payments counted
+SELECT fine_id, amount FROM fine WHERE fine_id = 1;
+ fine_id | amount  
+---------+---------
+       1 | 1500.00
+(1 row)
+

@@ -1,0 +1,21 @@
+[1s] B: move copy 4 (locks copy 4)
+BEGIN;
+BEGIN
+UPDATE book_copy SET shelf = 'R2' WHERE copy_id = 4;
+UPDATE 1
+[2.5s] B: move copy 2 (A holds copy 2 and is waiting for B = deadlock)
+Timing is on.
+UPDATE book_copy SET shelf = 'R2' WHERE copy_id = 2;
+UPDATE 1
+Time: 499.042 ms
+Timing is off.
+COMMIT;
+COMMIT
+Final shelves:
+SELECT copy_id, shelf FROM book_copy WHERE copy_id IN (2, 4) ORDER BY copy_id;
+ copy_id | shelf 
+---------+-------
+       2 | R2
+       4 | R2
+(2 rows)
+

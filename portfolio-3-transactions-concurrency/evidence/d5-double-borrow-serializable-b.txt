@@ -1,0 +1,27 @@
+[1s] B (librarian 1): SERIALIZABLE, check copy 5
+BEGIN ISOLATION LEVEL SERIALIZABLE;
+BEGIN
+SELECT copy_id, status FROM book_copy WHERE copy_id = 5;
+ copy_id |  status   
+---------+-----------
+       5 | available
+(1 row)
+
+[4s] B: it looked available, so try to lend it to member 4
+UPDATE book_copy SET status = 'on_loan' WHERE copy_id = 5;
+ERROR:  40001: could not serialize access due to concurrent update
+LOCATION:  ExecUpdate, nodeModifyTable.c:2418
+ROLLBACK;
+ROLLBACK
+B: retry the whole transaction from the start
+BEGIN ISOLATION LEVEL SERIALIZABLE;
+BEGIN
+SELECT copy_id, status FROM book_copy WHERE copy_id = 5;
+ copy_id | status  
+---------+---------
+       5 | on_loan
+(1 row)
+
+B: now it shows on_loan, so B does not lend it
+ROLLBACK;
+ROLLBACK

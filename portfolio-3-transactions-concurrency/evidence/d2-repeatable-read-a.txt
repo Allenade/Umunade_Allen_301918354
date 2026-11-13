@@ -1,0 +1,25 @@
+[0s] A: start a REPEATABLE READ transaction and read copy 5
+BEGIN ISOLATION LEVEL REPEATABLE READ;
+BEGIN
+SELECT copy_id, status FROM book_copy WHERE copy_id = 5;
+ copy_id |  status   
+---------+-----------
+       5 | available
+(1 row)
+
+[2s] A: read copy 5 again in the same transaction
+SELECT copy_id, status FROM book_copy WHERE copy_id = 5;
+ copy_id |  status   
+---------+-----------
+       5 | available
+(1 row)
+
+COMMIT;
+COMMIT
+A: after COMMIT, a new transaction sees the change made by B
+SELECT copy_id, status FROM book_copy WHERE copy_id = 5;
+ copy_id | status  
+---------+---------
+       5 | damaged
+(1 row)
+

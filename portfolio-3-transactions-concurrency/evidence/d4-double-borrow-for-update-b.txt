@@ -1,0 +1,19 @@
+[1s] B (librarian 1): lock and check copy 5 (this waits for A)
+BEGIN;
+BEGIN
+Timing is on.
+SELECT copy_id, status FROM book_copy WHERE copy_id = 5 FOR UPDATE;
+ copy_id | status  
+---------+---------
+       5 | on_loan
+(1 row)
+
+Time: 2015.444 ms (00:02.015)
+Timing is off.
+B: the copy is already on loan, so B does not lend it and ends the transaction
+ROLLBACK;
+ROLLBACK
+B: borrow_copy() gives the same result with a clear message
+SELECT borrow_copy(5, 4, 1);
+ERROR:  copy 5 is not available (status: on_loan)
+CONTEXT:  PL/pgSQL function borrow_copy(integer,integer,integer,integer) line 18 at RAISE

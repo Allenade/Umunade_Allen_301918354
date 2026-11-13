@@ -1,0 +1,179 @@
+
+==============================================================
+A1. COMMIT: member 4 borrows copy 2, step by step
+==============================================================
+BEGIN;
+BEGIN
+SELECT copy_id, status FROM book_copy WHERE copy_id = 2 FOR UPDATE;
+ copy_id |  status   
+---------+-----------
+       2 | available
+(1 row)
+
+INSERT INTO loan (copy_id, member_id, lent_by, due_date)
+VALUES (2, 4, 1, CURRENT_DATE + 14)
+RETURNING loan_id, copy_id, member_id, due_date;
+ loan_id | copy_id | member_id |  due_date  
+---------+---------+-----------+------------
+       4 |       2 |         4 | 2026-11-27
+(1 row)
+
+INSERT 0 1
+UPDATE book_copy SET status = 'on_loan' WHERE copy_id = 2;
+UPDATE 1
+COMMIT;
+COMMIT
+After COMMIT, both changes are saved together:
+SELECT c.copy_id, c.status, l.loan_id, l.member_id, l.returned_at
+FROM book_copy c
+JOIN loan l ON l.copy_id = c.copy_id AND l.returned_at IS NULL
+WHERE c.copy_id = 2;
+ copy_id | status  | loan_id | member_id | returned_at 
+---------+---------+---------+-----------+-------------
+       2 | on_loan |       4 |         4 | 
+(1 row)
+
+
+==============================================================
+A2. ROLLBACK: member 6 tries to borrow copy 6 AND copy 1 together.
+    Copy 1 is already on loan, so the second insert breaks the
+    "one open loan per copy" rule from Part 1.
+==============================================================
+BEGIN;
+BEGIN
+INSERT INTO loan (copy_id, member_id, lent_by, due_date)
+VALUES (6, 6, 5, CURRENT_DATE + 14)
+RETURNING loan_id, copy_id;
+ loan_id | copy_id 
+---------+---------
+       5 |       6
+(1 row)
+
+INSERT 0 1
+UPDATE book_copy SET status = 'on_loan' WHERE copy_id = 6;
+UPDATE 1
+SELECT copy_id, status FROM book_copy WHERE copy_id = 6;
+ copy_id | status  
+---------+---------
+       6 | on_loan
+(1 row)
+
+INSERT INTO loan (copy_id, member_id, lent_by, due_date)
+VALUES (1, 6, 5, CURRENT_DATE + 14);
+ERROR:  duplicate key value violates unique constraint "uq_one_open_loan_per_copy"
+DETAIL:  Key (copy_id)=(1) already exists.
+SELECT copy_id, status FROM book_copy WHERE copy_id = 6;
+ROLLBACK;
+ROLLBACK
+After ROLLBACK, nothing from A2 was saved (copy 6 is still available, member 6 has no loans):
+SELECT copy_id, status FROM book_copy WHERE copy_id = 6;
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ copy_id |  status   
+---------+-----------
+       6 | available
+(1 row)
+
+SELECT count(*) AS loans_for_member_6 FROM loan WHERE member_id = 6;
+ loans_for_member_6 
+--------------------
+                  0
+(1 row)
+
+
+==============================================================
+A3. The same rule through borrow_copy(): it checks first and
+    stops with a clear message, and the transaction is undone.
+==============================================================
+BEGIN;
+BEGIN
+SELECT borrow_copy(6, 6, 5) AS new_loan_id;
+ new_loan_id 
+-------------
+           7
+(1 row)
+
+SELECT borrow_copy(1, 6, 5) AS new_loan_id;
+ERROR:  copy 1 is not available (status: on_loan)
+CONTEXT:  PL/pgSQL function borrow_copy(integer,integer,integer,integer) line 18 at RAISE
+ROLLBACK;
+ROLLBACK
+SELECT copy_id, status FROM book_copy WHERE copy_id = 6;
+ copy_id |  status   
+---------+-----------
+       6 | available
+(1 row)
+
+
+==============================================================
+A4. SAVEPOINT: member 6 borrows copy 6, then tries copy 3
+    (already out). Only the failed part is undone, then copy 4
+    is borrowed instead and everything is committed.
+==============================================================
+BEGIN;
+BEGIN
+SELECT borrow_copy(6, 6, 5) AS first_loan_id;
+ first_loan_id 
+---------------
+             8
+(1 row)
+
+SAVEPOINT second_book;
+SAVEPOINT
+SELECT borrow_copy(3, 6, 5) AS second_loan_id;
+ROLLBACK TO SAVEPOINT second_book;
+ERROR:  copy 3 is not available (status: on_loan)
+CONTEXT:  PL/pgSQL function borrow_copy(integer,integer,integer,integer) line 18 at RAISE
+ROLLBACK
+SELECT borrow_copy(4, 6, 5) AS second_loan_id;
+ second_loan_id 
+----------------
+              9
+(1 row)
+
+COMMIT;
+COMMIT
+Member 6 now has copies 6 and 4, and copy 3 was not touched:
+SELECT l.loan_id, l.copy_id, c.status
+FROM loan l JOIN book_copy c ON c.copy_id = l.copy_id
+WHERE l.member_id = 6
+ORDER BY l.loan_id;
+ loan_id | copy_id | status  
+---------+---------+---------
+       8 |       6 | on_loan
+       9 |       4 | on_loan
+(2 rows)
+
+SELECT copy_id, status FROM book_copy WHERE copy_id = 3;
+ copy_id | status  
+---------+---------
+       3 | on_loan
+(1 row)
+
+
+==============================================================
+A5. Consistency: the database refuses data that breaks its rules.
+==============================================================
+INSERT INTO loan (copy_id, member_id, lent_by, due_date)
+VALUES (5, 2, 1, CURRENT_DATE - 1);
+UPDATE fine SET amount = -500 WHERE fine_id = 1;
+ERROR:  new row for relation "loan" violates check constraint "chk_due_after_lent"
+DETAIL:  Failing row contains (10, 5, 2, 1, 2026-11-13 07:16:34.35895+00, 2026-11-12, null).
+INSERT INTO loan (copy_id, member_id, lent_by, due_date)
+VALUES (5, 999, 1, CURRENT_DATE + 14);
+ERROR:  new row for relation "fine" violates check constraint "fine_amount_check"
+DETAIL:  Failing row contains (1, 3, -500.00, overdue, paid, 2026-11-13 07:16:34.192124+00, null).
+Copy 5 still has no loan and fine 1 still has its old amount:
+SELECT count(*) AS loans_for_copy_5 FROM loan WHERE copy_id = 5;
+ERROR:  insert or update on table "loan" violates foreign key constraint "loan_member_id_fkey"
+DETAIL:  Key (member_id)=(999) is not present in table "member".
+ loans_for_copy_5 
+------------------
+                0
+(1 row)
+
+SELECT fine_id, amount FROM fine WHERE fine_id = 1;
+ fine_id | amount  
+---------+---------
+       1 | 3000.00
+(1 row)
+

@@ -1,0 +1,17 @@
+[0s] A (librarian 5): check copy 5
+BEGIN;
+BEGIN
+SELECT copy_id, status FROM book_copy WHERE copy_id = 5;
+ copy_id |  status   
+---------+-----------
+       5 | available
+(1 row)
+
+[2s] A: it is available, so lend it to member 6
+INSERT INTO loan (copy_id, member_id, lent_by, due_date) VALUES (5, 6, 5, CURRENT_DATE + 14);
+INSERT 0 1
+UPDATE book_copy SET status = 'on_loan' WHERE copy_id = 5;
+UPDATE 1
+[4s] A: COMMIT
+COMMIT;
+COMMIT
