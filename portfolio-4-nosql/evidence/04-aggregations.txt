@@ -1,0 +1,253 @@
+
+=== A1. Top 10 most borrowed titles in the last 90 days ===
+[
+  {
+    _id: 1648,
+    title: 'Revision Guide for Literature Book 1648',
+    times_borrowed: 7
+  },
+  {
+    _id: 21,
+    title: 'Advanced Fine Art Book 21',
+    times_borrowed: 6
+  },
+  {
+    _id: 220,
+    title: 'Advanced Literature Book 220',
+    times_borrowed: 6
+  },
+  {
+    _id: 520,
+    title: 'Introduction to History Book 520',
+    times_borrowed: 6
+  },
+  {
+    _id: 888,
+    title: 'New Certificate French Book 888',
+    times_borrowed: 6
+  },
+  {
+    _id: 1741,
+    title: 'New Certificate French Book 1741',
+    times_borrowed: 6
+  },
+  {
+    _id: 1912,
+    title: 'Revision Guide for Music Book 1912',
+    times_borrowed: 6
+  },
+  {
+    _id: 186,
+    title: 'Exploring French Book 186',
+    times_borrowed: 5
+  },
+  {
+    _id: 359,
+    title: 'Foundations of French Book 359',
+    times_borrowed: 5
+  },
+  {
+    _id: 460,
+    title: 'Practical Computer Studies Book 460',
+    times_borrowed: 5
+  }
+]
+
+=== A2. Overdue loans per campus, with the fine owed so far (UGX 500 per late day) ===
+[
+  {
+    _id: 'Naalya Lugazi Campus',
+    overdue_loans: 66,
+    fine_owed_ugx: Long('192000'),
+    worst_days_late: Long('11')
+  },
+  {
+    _id: 'Naalya Main Campus',
+    overdue_loans: 58,
+    fine_owed_ugx: Long('175000'),
+    worst_days_late: Long('11')
+  },
+  {
+    _id: 'Naalya Mukono Campus',
+    overdue_loans: 53,
+    fine_owed_ugx: Long('137000'),
+    worst_days_late: Long('11')
+  },
+  {
+    _id: 'Naalya Bweyogerere Campus',
+    overdue_loans: 43,
+    fine_owed_ugx: Long('121500'),
+    worst_days_late: Long('11')
+  },
+  {
+    _id: 'Naalya Kira Campus',
+    overdue_loans: 41,
+    fine_owed_ugx: Long('122500'),
+    worst_days_late: Long('11')
+  }
+]
+
+=== A3. Fines summary by member type and fine status ($lookup to members) ===
+[
+  {
+    _id: {
+      member_type: 'librarian',
+      fine_status: 'paid'
+    },
+    fines: 40,
+    total_ugx: 338000
+  },
+  {
+    _id: {
+      member_type: 'librarian',
+      fine_status: 'unpaid'
+    },
+    fines: 5,
+    total_ugx: 36000
+  },
+  {
+    _id: {
+      member_type: 'staff',
+      fine_status: 'paid'
+    },
+    fines: 363,
+    total_ugx: 2907500
+  },
+  {
+    _id: {
+      member_type: 'staff',
+      fine_status: 'unpaid'
+    },
+    fines: 35,
+    total_ugx: 313000
+  },
+  {
+    _id: {
+      member_type: 'staff',
+      fine_status: 'waived'
+    },
+    fines: 18,
+    total_ugx: 143500
+  },
+  {
+    _id: {
+      member_type: 'student',
+      fine_status: 'paid'
+    },
+    fines: 3735,
+    total_ugx: 30764000
+  },
+  {
+    _id: {
+      member_type: 'student',
+      fine_status: 'unpaid'
+    },
+    fines: 254,
+    total_ugx: 2293500
+  },
+  {
+    _id: {
+      member_type: 'student',
+      fine_status: 'waived'
+    },
+    fines: 170,
+    total_ugx: 1460500
+  }
+]
+
+=== A4. Five members who owe the most in unpaid fines ($lookup for name, class and campus) ===
+[
+  {
+    unpaid_ugx: 22500,
+    fines: 2,
+    member_id: 472,
+    name: 'Faith Akello',
+    class: 'S3',
+    campus: 'Naalya Bweyogerere Campus'
+  },
+  {
+    unpaid_ugx: 18500,
+    fines: 2,
+    member_id: 336,
+    name: 'David Babirye',
+    class: 'S1',
+    campus: 'Naalya Mukono Campus'
+  },
+  {
+    unpaid_ugx: 17500,
+    fines: 2,
+    member_id: 453,
+    name: 'Brian Namuli',
+    class: 'S1',
+    campus: 'Naalya Kira Campus'
+  },
+  {
+    unpaid_ugx: 16500,
+    fines: 2,
+    member_id: 2955,
+    name: 'Samuel Ouma',
+    class: 'S4',
+    campus: 'Naalya Lugazi Campus'
+  },
+  {
+    unpaid_ugx: 15500,
+    fines: 1,
+    member_id: 730,
+    name: 'Doreen Mugisha',
+    campus: 'Naalya Bweyogerere Campus'
+  }
+]
+
+=== A5. Stock check: copies per campus and status ($unwind the embedded copies) ===
+[
+  {
+    total: 1229,
+    campus: 'Naalya Bweyogerere Campus',
+    by_status: {
+      lost: 3,
+      available: 1097,
+      damaged: 4,
+      on_loan: 125
+    }
+  },
+  {
+    total: 1192,
+    campus: 'Naalya Kira Campus',
+    by_status: {
+      on_loan: 108,
+      available: 1078,
+      lost: 4,
+      damaged: 2
+    }
+  },
+  {
+    total: 1206,
+    campus: 'Naalya Lugazi Campus',
+    by_status: {
+      lost: 6,
+      on_loan: 129,
+      available: 1065,
+      damaged: 6
+    }
+  },
+  {
+    total: 1197,
+    campus: 'Naalya Main Campus',
+    by_status: {
+      lost: 5,
+      damaged: 10,
+      available: 1052,
+      on_loan: 130
+    }
+  },
+  {
+    total: 1204,
+    campus: 'Naalya Mukono Campus',
+    by_status: {
+      lost: 3,
+      available: 1068,
+      damaged: 5,
+      on_loan: 128
+    }
+  }
+]

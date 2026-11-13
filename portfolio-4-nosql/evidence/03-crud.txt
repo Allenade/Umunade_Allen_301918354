@@ -1,0 +1,153 @@
+
+=== C1. insertOne: a new student joins ===
+{
+  acknowledged: true,
+  insertedId: 5001
+}
+
+=== C2. lend copy 2 of title 1 to the new student (two writes: the loan and the copy status) ===
+{
+  acknowledged: true,
+  insertedId: ObjectId('6af6b9e0bdb7ccfb8791abaf')
+}
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+
+=== R1. find: open loans of member 9 (only the fields the desk needs) ===
+[
+  {
+    copy_id: 1828,
+    lent_at: ISODate('2026-11-11T08:57:12.716Z'),
+    due_date: ISODate('2026-11-25T08:57:12.716Z'),
+    snapshot: {
+      title: 'Foundations of Physics Book 609'
+    }
+  }
+]
+
+=== R2. find with $filter: copies of title 1 that are available at Naalya Main Campus ===
+[
+  {
+    _id: 1,
+    title: 'Biology for Secondary Schools',
+    copies: [
+      {
+        copy_id: 1,
+        campus: 'Naalya Main Campus',
+        accession_number: 'BK-000001',
+        shelf: 'A10',
+        status: 'available'
+      }
+    ]
+  }
+]
+
+=== R3. find on an embedded array field: titles written by Chinua Achebe ===
+[
+  {
+    _id: 2,
+    title: 'Things Fall Apart',
+    published_year: 1958,
+    category: 'Literature'
+  }
+]
+
+=== R4. countDocuments: students in S6 at Naalya Kira Campus ===
+156
+
+=== U1. return a book: member 9 brings back copy 1828 (title 609) ===
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+{
+  _id: 609,
+  title: 'Foundations of Physics Book 609',
+  copies: [
+    {
+      copy_id: 1828,
+      campus: 'Naalya Lugazi Campus',
+      accession_number: 'BK-001828',
+      shelf: 'G3',
+      status: 'available'
+    }
+  ]
+}
+
+=== U2. pay a fine: the first unpaid fine of member 3577 is paid ===
+{
+  _id: ObjectId('6af6b9dfb0a09c610270b35f'),
+  fine: {
+    amount: 14000,
+    reason: 'overdue',
+    status: 'unpaid'
+  }
+}
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}
+{
+  fine: {
+    amount: 14000,
+    reason: 'overdue',
+    status: 'paid',
+    paid_at: ISODate('2026-11-13T07:18:56.540Z')
+  }
+}
+
+=== U3. updateMany: move every History title published before 1970 to the Reference category ===
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 13,
+  modifiedCount: 13,
+  upsertedCount: 0
+}
+
+=== D1. deleteOne: remove member 5001, who still has a book out ===
+{
+  acknowledged: true,
+  deletedCount: 1
+}
+MongoDB allowed it. There are no foreign keys, so the loan now points to a member that does not exist:
+[
+  {
+    member_id: 5001,
+    copy_id: 2,
+    status: 'open',
+    member_found: 0
+  }
+]
+(In Part 1, PostgreSQL refuses this delete because of the loan.member_id foreign key.)
+
+=== D2. clean up: delete the orphan loan and make copy 2 available again ===
+{
+  acknowledged: true,
+  deletedCount: 1
+}
+{
+  acknowledged: true,
+  insertedId: null,
+  matchedCount: 1,
+  modifiedCount: 1,
+  upsertedCount: 0
+}

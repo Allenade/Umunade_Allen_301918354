@@ -1,0 +1,19 @@
+# Optional: MongoDB 7 in Docker, as a single-node replica set (needed for
+# transactions). It uses port 27018 on the laptop so it does not clash with a
+# Homebrew mongod on 27017. Start it from the repository root with:
+#   docker compose -f portfolio-4-nosql/docker-compose.mongo.yml up -d
+# then, once only:
+#   docker exec naalya_mongo mongosh --quiet --eval 'rs.initiate({_id: "rs0", members: [{_id: 0, host: "localhost:27017"}]})'
+services:
+  mongo:
+    image: mongo:7
+    container_name: naalya_mongo
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodata:/data/db
+      - ./:/scripts:ro
+
+volumes:
+  mongodata:

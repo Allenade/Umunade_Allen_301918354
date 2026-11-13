@@ -1,0 +1,18 @@
+Connected to replica set "rs0", transactions are allowed.
+
+=== T1. COMMIT: member 11 borrows copy 1 of "Biology for Secondary Schools" ===
+before: copy 1 is available, open loans for copy 1: 0
+  borrowed copy 1 (Biology for Secondary Schools) for member 11
+inside the transaction (not committed yet), other users still see: copy 1 is available, open loans for copy 1: 0
+after COMMIT: copy 1 is on_loan, open loans for copy 1: 1
+
+=== T2. ABORT: member 15 borrows copy 2 AND copy 1 together (copy 1 is now out) ===
+before: copy 2 is available, loans for member 15 in the last hour: 0
+  borrowed copy 2 (Biology for Secondary Schools) for member 15
+  ERROR: copy 1 is not available -> abortTransaction()
+after ABORT: copy 2 is available, loans for member 15 in the last hour: 0
+The first borrow (copy 2) was undone as well, so nothing half-done was saved.
+
+=== T3. The unique index still protects us: a second open loan for copy 1 inside a transaction ===
+  ERROR 11000: E11000 duplicate key error collection: naalya_library.loans index: one_open_loan_per_copy dup key: { copy_id: 1 }
+open loans for copy 1: 1

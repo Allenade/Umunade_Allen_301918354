@@ -1,0 +1,81 @@
+Loaded in 833 ms
+{
+  members: 5000,
+  titles: 2000,
+  copies_embedded_in_titles: 6028,
+  loans: 30621,
+  open_loans: 621,
+  overdue_now: 261,
+  loans_with_fine: 4620
+}
+
+One title document (embedded authors and copies):
+{
+  _id: 2,
+  isbn: '9780000000002',
+  title: 'Things Fall Apart',
+  publisher: 'Heinemann',
+  published_year: 1958,
+  category: 'Literature',
+  authors: [
+    {
+      name: 'Chinua Achebe'
+    }
+  ],
+  copies: [
+    {
+      copy_id: 4,
+      campus: 'Naalya Kira Campus',
+      accession_number: 'BK-000004',
+      shelf: 'A6',
+      status: 'available'
+    },
+    {
+      copy_id: 5,
+      campus: 'Naalya Mukono Campus',
+      accession_number: 'BK-000005',
+      shelf: 'B14',
+      status: 'on_loan'
+    },
+    {
+      copy_id: 6,
+      campus: 'Naalya Main Campus',
+      accession_number: 'BK-000006',
+      shelf: 'B1',
+      status: 'available'
+    }
+  ]
+}
+
+One member document:
+{
+  _id: 7,
+  full_name: 'Peter Kyomuhendo',
+  email: 'member7@example.com',
+  type: 'student',
+  campus: 'Naalya Bweyogerere Campus',
+  joined_on: ISODate('2022-06-03T07:18:55.226Z'),
+  class_name: 'S2'
+}
+
+One loan document (references + snapshot + embedded fine):
+{
+  member_id: 77,
+  title_id: 72,
+  copy_id: 214,
+  lent_by: 900,
+  lent_at: ISODate('2025-01-07T19:25:52.137Z'),
+  due_date: ISODate('2025-01-21T19:25:52.137Z'),
+  returned_at: ISODate('2025-02-10T12:09:34.505Z'),
+  status: 'returned',
+  snapshot: {
+    title: 'New Certificate Kiswahili Book 72',
+    member_name: 'Moses Nakato',
+    campus: 'Naalya Lugazi Campus'
+  },
+  fine: {
+    amount: 10000,
+    reason: 'overdue',
+    status: 'paid'
+  }
+}

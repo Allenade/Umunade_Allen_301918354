@@ -1,0 +1,30 @@
+Collections created:
+[
+  'loans',
+  'members',
+  'titles'
+]
+
+--- 1. member with a bad email and an unknown type
+REJECTED: error 121: Document failed validation
+  broken rule: email pattern (regular expression did not match) value: "not-an-email" rule: {"pattern":"^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"}
+  broken rule: type enum (value was not found in enum) value: "visitor" rule: {"enum":["student","staff","librarian"]}
+
+--- 2. staff member with a class (only students have a class)
+REJECTED: error 121: Document failed validation
+  broken rule: anyOf
+
+--- 3. loan with a negative fine
+REJECTED: error 121: Document failed validation
+  broken rule: fine.amount minimum (comparison failed) value: -500 rule: {"minimum":0,"exclusiveMinimum":true}
+
+--- 4. loan due BEFORE the day it was lent
+REJECTED: error 121: Document failed validation
+  broken rule: $expr {"$gte":["$due_date","$lent_at"]}
+
+--- 5. title with no authors and a campus that does not exist
+REJECTED: error 121: Document failed validation
+  broken rule: authors minItems (array did not match specified length) value: [] rule: {"minItems":1}
+  broken rule: copies items (At least one item did not match the sub-schema)
+
+Documents saved after the failing inserts: members=0, loans=0, titles=0

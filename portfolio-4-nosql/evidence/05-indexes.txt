@@ -1,0 +1,81 @@
+================ BEFORE the new indexes ================
+Q1. loan history of member 3912, newest first (latest 20)
+  plan:               SORT <- COLLSCAN
+  nReturned:          16
+  totalKeysExamined:  0
+  totalDocsExamined:  30621
+  executionTimeMillis: 18
+Q2. overdue open loans at Naalya Kira Campus
+  plan:               COLLSCAN
+  nReturned:          41
+  totalKeysExamined:  0
+  totalDocsExamined:  30621
+  executionTimeMillis: 7
+Q3. newest 10 Literature titles
+  plan:               SORT <- COLLSCAN
+  nReturned:          10
+  totalKeysExamined:  0
+  totalDocsExamined:  2000
+  executionTimeMillis: 0
+Q4. search titles for "achebe" (no text index yet, so a case-insensitive regex)
+    find({$or: [{title: /achebe/i}, {"authors.name": /achebe/i}]})
+  plan:               SUBPLAN <- COLLSCAN
+  nReturned:          124
+  totalKeysExamined:  0
+  totalDocsExamined:  2000
+  executionTimeMillis: 1
+
+================ creating indexes ================
+member_id_1_lent_at_-1
+status_1_snapshot.campus_1_due_date_1
+category_1_published_year_-1
+title_text_authors.name_text
+
+================ AFTER the new indexes ================
+Q1. loan history of member 3912, newest first (latest 20)
+  plan:               LIMIT <- FETCH <- IXSCAN (member_id_1_lent_at_-1)
+  nReturned:          16
+  totalKeysExamined:  16
+  totalDocsExamined:  16
+  executionTimeMillis: 0
+Q2. overdue open loans at Naalya Kira Campus
+  plan:               FETCH <- IXSCAN (status_1_snapshot.campus_1_due_date_1)
+  nReturned:          41
+  totalKeysExamined:  41
+  totalDocsExamined:  41
+  executionTimeMillis: 0
+Q3. newest 10 Literature titles
+  plan:               LIMIT <- FETCH <- IXSCAN (category_1_published_year_-1)
+  nReturned:          10
+  totalKeysExamined:  10
+  totalDocsExamined:  10
+  executionTimeMillis: 0
+Q4. search titles for "achebe" with the text index
+    find({$text: {$search: "achebe"}})
+  plan:               TEXT_MATCH (title_text_authors.name_text) <- FETCH <- IXSCAN (title_text_authors.name_text)
+  nReturned:          124
+  totalKeysExamined:  124
+  totalDocsExamined:  124
+  executionTimeMillis: 0
+
+================ summary ================
+query | docs examined before -> after | keys examined before -> after | returned
+Q1    | 30621 -> 16 | 0 -> 16 | 16 / 16
+Q2    | 30621 -> 41 | 0 -> 41 | 41 / 41
+Q3    | 2000 -> 10 | 0 -> 10 | 10 / 10
+Q4    | 2000 -> 124 | 0 -> 124 | 124 / 124
+
+Indexes now on loans:
+[
+  '_id_',
+  'one_open_loan_per_copy',
+  'member_id_1_lent_at_-1',
+  'status_1_snapshot.campus_1_due_date_1'
+]
+Indexes now on titles:
+[
+  '_id_',
+  'isbn_1',
+  'category_1_published_year_-1',
+  'title_text_authors.name_text'
+]

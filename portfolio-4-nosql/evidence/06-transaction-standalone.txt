@@ -1,0 +1,4 @@
+This server is not part of a replica set, so MongoDB will not run transactions here.
+Trying anyway, to show the error MongoDB gives:
+  ERROR 20 (IllegalOperation): Transaction numbers are only allowed on a replica set member or mongos
+Start mongod with --replSet rs0 and run rs.initiate() once (see the README), then run this script again.
